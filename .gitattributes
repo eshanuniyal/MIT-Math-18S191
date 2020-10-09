@@ -1,0 +1,2 @@
+*.html linguist-detectable=false
+*.jl linguist-detectable=true
