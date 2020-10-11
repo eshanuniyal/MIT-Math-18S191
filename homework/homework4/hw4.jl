@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.0
+# v0.12.3
 
 using Markdown
 using InteractiveUtils
@@ -740,6 +740,17 @@ begin
 	end
 end
 
+# ╔═╡ 9c39974c-04a5-11eb-184d-317eb542452c
+let
+	agent = Agent(S, 0)
+	source = Agent(I, 0)
+	infection = InfectionRecovery(0.9, 0.5)
+	
+	interact!(agent, source, infection)
+	
+	(agent=agent, source=source)
+end
+
 # ╔═╡ 2ade2694-0425-11eb-2fb2-390da43d9695
 function step!(agents::Vector{Agent}, infection::AbstractInfection)
 	agent = rand(agents)  # choosing random agent
@@ -770,48 +781,6 @@ function simulation(N::Integer, T::Integer, infection::AbstractInfection)
 	return (S=S_counts, I=I_counts, R=R_counts)
 end
 
-# ╔═╡ 38b1aa5a-04cf-11eb-11a2-930741fc9076
-function repeat_simulations(N, T, infection, num_simulations)
-	
-	map(1:num_simulations) do _
-		simulation(N, T, infection)
-	end
-end
-
-# ╔═╡ 26e2978e-0435-11eb-0d61-25f552d2771e
-function num_infected_distribution(N, T, infection_recovery)
-	agents = generate_agents(N)
-	# running simulation
-	for _ in 1:T
-		sweep!(agents, infection_recovery)
-	end
-	# finding number of agents each agent has infected
-	num_infecteds = getfield.(agents, :num_infected)
-	# finding number of agents that have infected 0, 1, ... maximum(num_infected) agents
-	num_infected_counts = Float64[count(==(k), num_infecteds) 
-		for k in 1:maximum(num_infecteds)]
-	# normalising
-	num_infected_counts ./= sum(num_infected_counts)
-	
-	return bar(frequencies(num_infecteds),
-		legend = false,
-		title = "Probability distribution of number of agents infected",
-		xlabel = "Number of agents infected by agent",
-		ylabel = "Probability"
-	)
-end
-
-# ╔═╡ 9c39974c-04a5-11eb-184d-317eb542452c
-let
-	agent = Agent(S, 0)
-	source = Agent(I, 0)
-	infection = InfectionRecovery(0.9, 0.5)
-	
-	interact!(agent, source, infection)
-	
-	(agent=agent, source=source)
-end
-
 # ╔═╡ b92f1cec-04ae-11eb-0072-3535d1118494
 simulation(3, 20, InfectionRecovery(0.9, 0.2))
 
@@ -834,6 +803,14 @@ let
 	plot!(result, 1:T, sim.S, ylim=(0, N), label="Susceptible")
 	plot!(result, 1:T, sim.I, ylim=(0, N), label="Infectious")
 	plot!(result, 1:T, sim.R, ylim=(0, N), label="Recovered")
+end
+
+# ╔═╡ 38b1aa5a-04cf-11eb-11a2-930741fc9076
+function repeat_simulations(N, T, infection, num_simulations)
+	
+	map(1:num_simulations) do _
+		simulation(N, T, infection)
+	end
 end
 
 # ╔═╡ 80c2cd88-04b1-11eb-326e-0120a39405ea
@@ -881,6 +858,29 @@ maximum(map(t -> sim.I[t] - sim.I[t-1] + sim.R[t] - sim.R[t-1], 2:1000))/ 100
 # ╔═╡ 13bd08aa-062f-11eb-3ae7-19414e662470
 # time to 50% of people infected/recovered
 findfirst(t -> sim.I[t] + sim.R[t] ≥ 50, 1:1000)
+
+# ╔═╡ 26e2978e-0435-11eb-0d61-25f552d2771e
+function num_infected_distribution(N, T, infection_recovery)
+	agents = generate_agents(N)
+	# running simulation
+	for _ in 1:T
+		sweep!(agents, infection_recovery)
+	end
+	# finding number of agents each agent has infected
+	num_infecteds = getfield.(agents, :num_infected)
+	# finding number of agents that have infected 0, 1, ... maximum(num_infected) agents
+	num_infected_counts = Float64[count(==(k), num_infecteds) 
+		for k in 1:maximum(num_infecteds)]
+	# normalising
+	num_infected_counts ./= sum(num_infected_counts)
+	
+	return bar(frequencies(num_infecteds),
+		legend = false,
+		title = "Probability distribution of number of agents infected",
+		xlabel = "Number of agents infected by agent",
+		ylabel = "Probability"
+	)
+end
 
 # ╔═╡ d61ba83e-07b5-11eb-3f4d-e91b055cae3c
 num_infected_distribution(1000, 1000, InfectionRecovery(0.02, 0.002))
